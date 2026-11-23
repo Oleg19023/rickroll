@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Player</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100dvh;
+      background: #000;
+      overflow: hidden;
+    }
+
+    #player {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      object-fit: cover;
+      background: #000;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <video id="player" src="rickroll.mp4" preload="auto" playsinline webkit-playsinline autoplay loop muted></video>
+
+  <script>
+    const video = document.getElementById('player');
+
+    function startMuted() {
+      video.muted = true;
+      video.play().catch(() => {});
+    }
+
+    async function enterFullscreenSafe() {
+      const el = document.documentElement;
+      const req =
+        el.requestFullscreen ||
+        el.webkitRequestFullscreen ||
+        el.mozRequestFullScreen ||
+        el.msRequestFullscreen;
+
+      if (req && !document.fullscreenElement && !document.webkitFullscreenElement) {
+        try {
+          const result = req.call(el);
+          if (result && typeof result.catch === 'function') {
+            await result.catch(() => {});
+          }
+          return;
+        } catch (_) {}
+      }
+
+      // Запасной вариант для iOS/видео-элемента, если fullscreen на странице не поддерживается
+      if (typeof video.webkitEnterFullscreen === 'function') {
+        try {
+          video.webkitEnterFullscreen();
+        } catch (_) {}
+      }
+    }
+
+    function onUserInteract() {
+      video.muted = false;
+      video.volume = 1.0;
+
+      const playPromise = video.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          video.muted = true;
+          video.play().catch(() => {});
+        });
+      }
+
+      enterFullscreenSafe();
+    }
+
+    startMuted();
+    window.addEventListener('load', startMuted);
+
+    ['click', 'touchend', 'keydown'].forEach((evt) => {
+      window.addEventListener(evt, onUserInteract);
+    });
+
+    video.addEventListener('pause', () => {
+      if (!video.ended) {
+        video.play().catch(() => {});
+      }
+    });
+  </script>
+</body>
+</html>
